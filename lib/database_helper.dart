@@ -114,9 +114,9 @@ class DatabaseHelper {
     var easyResult = await db.rawQuery('SELECT SUM(points) as total FROM bymode WHERE mode = "easy"');
     var mediumResult = await db.rawQuery('SELECT SUM(points) as total FROM bymode WHERE mode = "medium"');
     var hardResult = await db.rawQuery('SELECT SUM(points) as total FROM bymode WHERE mode = "hard"');
-    var fiveResult = await db.rawQuery('SELECT SUM(points) as total FROM byindex WHERE index_level = 5');
-    var sixResult = await db.rawQuery('SELECT SUM(points) as total FROM byindex WHERE index_level = 6');
-    var sevenResult = await db.rawQuery('SELECT SUM(points) as total FROM byindex WHERE index_level = 7');
+    var fiveResult = await db.rawQuery('SELECT SUM(points) as total FROM byindex WHERE index_level = 4');
+    var sixResult = await db.rawQuery('SELECT SUM(points) as total FROM byindex WHERE index_level = 5');
+    var sevenResult = await db.rawQuery('SELECT SUM(points) as total FROM byindex WHERE index_level = 6');
 
     return {
       'easy': easyResult[0]['total'] as int? ?? 0,
