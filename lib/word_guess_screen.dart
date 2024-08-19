@@ -4,6 +4,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart'; // Import for TextInputFormatter
+import 'achievement.dart';
+import 'database_helper.dart'; // Import the database helper
 
 class WordGuessScreen extends StatefulWidget {
   final String mode;
@@ -133,138 +135,182 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
     });
   }
 
-  FocusNode getNextFocusNode(int currentIndex) {
-    for (int i = currentIndex; i < focusNodes.length; i++) {
+  FocusNode getNextFocusNode(int index) {
+    for (int i = index; i < focusNodes.length; i++) {
       if (controllers[i].text.isEmpty) {
         return focusNodes[i];
       }
     }
-    return focusNodes[currentIndex];
+    return focusNodes.last;
   }
 
-  Future<void> checkWord() async {
-    String userGuess = controllers.map((controller) => controller.text).join().toUpperCase(); // Convert guess to uppercase
+  void checkAnswer() async {
+    String guessedWord = controllers.map((c) => c.text.toUpperCase()).join();
 
-    if (userGuess == word) {
+    if (guessedWord == word) {
       correctGuessesInLevel++;
       wordsGuessed++;
 
+      // Determine points based on mode
+      int points = 0;
+      switch (widget.mode) {
+        case 'easy':
+          points = 5;
+          break;
+        case 'medium':
+          points = 7;
+          break;
+        case 'hard':
+          points = 10;
+          break;
+        default:
+          points = 5;  // For other modes including Free Play
+          break;
+      }
+
+      // Insert points into the database
+      final dbHelper = DatabaseHelper();
       if (isLevelBasedMode) {
-        if (wordsGuessed % 10 == 0) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text('Level Completed!'),
-              content: Text('You have completed Level $currentLevel!\nCorrect guesses: $correctGuessesInLevel out of 10'),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    if (currentLevel < 100) {
-                      setState(() {
-                        currentLevel++;
-                        wordsGuessed = 0;
-                        correctGuessesInLevel = 0;
-                        currentWordIndex = (currentLevel - 1) * 10;
-                        updateWord();
-                        setupTextFields();
-                      });
-                      await saveState();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Congratulations! You have completed all levels!')),
-                      );
-                    }
-                  },
-                  child: Text('Proceed to Next Level'),
-                ),
-              ],
-            ),
-          );
-        } else {
-          if (currentWordIndex < (currentLevel * 10 - 1)) {
-            setState(() {
-              currentWordIndex++;
-              updateWord();
-              setupTextFields();
-            });
-            await saveState();
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Level $currentLevel incomplete. Proceeding to the next level.')),
-            );
-            Future.delayed(Duration(seconds: 1), () async {
-              setState(() {
-                currentLevel++;
-                wordsGuessed = 0;
-                correctGuessesInLevel = 0;
-                currentWordIndex = (currentLevel - 1) * 10;
-                updateWord();
-                setupTextFields();
-              });
-              await saveState();
-            });
-          }
-        }
+        await dbHelper.insertOrUpdateByMode(widget.mode, currentLevel, points);
       } else {
-        if (currentWordIndex < wordList.length - 1) {
-          setState(() {
-            currentWordIndex++;
-            updateWord();
-            setupTextFields();
-          });
-          await saveState();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No more words available in this mode.')),
-          );
-        }
+        await dbHelper.insertOrUpdateByIndex(currentWordIndex, points);
+      }
+
+      if (isLevelBasedMode && wordsGuessed % 10 == 0) {
+        _showLevelCompleteDialog();
+      } else if (isLevelBasedMode) {
+        _showCorrectAnswerDialog();
+      } else {
+        _nextWord();
       }
     } else {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Incorrect'),
-          content: Text('Correct word: $word'),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                if (currentWordIndex < (currentLevel * 10 - 1) || !isLevelBasedMode) {
-                  setState(() {
-                    currentWordIndex++;
-                    updateWord();
-                    setupTextFields();
-                  });
-                  await saveState();
-                }
-              },
-              child: Text('Next'),
-            ),
-          ],
-        ),
-      );
+      _showIncorrectAnswerDialog();
     }
   }
 
-  @override
-  void dispose() {
-    saveState(); // Save state when the page is closed
-    super.dispose();
+  void _nextWord() {
+    setState(() {
+      currentWordIndex++;
+      if (currentWordIndex < wordList.length) {
+        updateWord();
+        setupTextFields();
+      } else {
+        _showGameCompleteDialog();
+      }
+    });
+  }
+
+  void _showCorrectAnswerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Correct!"),
+          content: Text("You've guessed the word correctly."),
+          actions: [
+            TextButton(
+              child: Text("Next"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _nextWord();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showIncorrectAnswerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Incorrect!"),
+          content: Text("The correct word was: $word"),
+          actions: [
+            TextButton(
+              child: Text("Next"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _nextWord();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showLevelCompleteDialog() {
+    saveState();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Level Complete!"),
+          content: Text("You've completed Level $currentLevel."),
+          actions: [
+            TextButton(
+              child: Text("Next Level"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  currentLevel++;
+                  correctGuessesInLevel = 0;
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showGameCompleteDialog() {
+    saveState();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Game Complete!"),
+          content: Text("You've completed all levels."),
+          actions: [
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Exit to the previous screen
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.mode == 'Free Play' ? 'Guess the Word - Free Play' : 'Guess the Word - Level $currentLevel'),
+        title: Text(widget.mode == 'Free Play' ? 'Free Play' : 'Level $currentLevel'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.emoji_events),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AchievementScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Hint: ${hint.toLowerCase()}'), // Show hint in lowercase
+            Text(hint, style: TextStyle(fontSize: 24)),
             SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -277,13 +323,10 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
                       controller: controllers[index],
                       focusNode: focusNodes[index],
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 24),
-                      maxLength: 1,
-                      inputFormatters: [UpperCaseTextFormatter()], // Convert input to uppercase
-                      decoration: InputDecoration(
-                        counterText: '',
-                        border: OutlineInputBorder(),
-                      ),
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(1),
+                        UpperCaseTextFormatter(),
+                      ],
                       onChanged: (value) {
                         if (value.isNotEmpty) {
                           FocusScope.of(context).requestFocus(getNextFocusNode(index + 1));
@@ -296,7 +339,7 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: checkWord,
+              onPressed: checkAnswer,
               child: Text('Submit'),
             ),
           ],
@@ -306,14 +349,12 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
   }
 }
 
-// TextInputFormatter to convert input to uppercase
 class UpperCaseTextFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    return newValue.copyWith(
-      text: newValue.text.toUpperCase(),
-      selection: newValue.selection,
-    );
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    return newValue.copyWith(text: newValue.text.toUpperCase());
   }
 }
