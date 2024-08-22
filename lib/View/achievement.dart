@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'achievement_model.dart';
 import 'database_helper.dart';
 
 class AchievementScreen extends StatelessWidget {
+  final AchievementModel _model = AchievementModel();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,19 +41,6 @@ class AchievementScreen extends StatelessWidget {
     );
   }
 
-  Future<Map<String, int>> loadPoints() async {
-    final dbHelper = DatabaseHelper();
-    final totalPoints = await dbHelper.getTotalPoints();
-    final pointsByMode = await dbHelper.getPointsByMode();
 
-    return {
-      'total': totalPoints['total']!,
-      'easy': pointsByMode['easy']!,
-      'medium': pointsByMode['medium']!,
-      'hard': pointsByMode['hard']!,
-      'five': pointsByMode['five']!,
-      'six': pointsByMode['six']!,
-      'seven': pointsByMode['seven']!,
-    };
-  }
+
 }

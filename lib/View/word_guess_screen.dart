@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:csv/csv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart'; // Import for TextInputFormatter
+import 'package:flutter/services.dart';
+import 'Model/word_model.dart';
 import 'achievement.dart';
-import 'database_helper.dart'; // Import the database helper
 
 class WordGuessScreen extends StatefulWidget {
   final String mode;
@@ -17,110 +13,30 @@ class WordGuessScreen extends StatefulWidget {
 }
 
 class _WordGuessScreenState extends State<WordGuessScreen> {
-  List<List<String>> wordList = [];
-  int currentWordIndex = 0;
-  int currentLevel = 1;
-  int wordsGuessed = 0;
-  int correctGuessesInLevel = 0;
+  late WordModel wordModel;
   List<TextEditingController> controllers = [];
   List<FocusNode> focusNodes = [];
-  String hint = '';
-  String word = '';
-  bool isLevelBasedMode = false;
 
   @override
   void initState() {
     super.initState();
-    isLevelBasedMode = ['easy', 'medium', 'hard'].contains(widget.mode);
+    wordModel = WordModel();
+    wordModel.isLevelBasedMode = ['easy', 'medium', 'hard'].contains(widget.mode);
 
     if (widget.mode == 'Free Play') {
-      isLevelBasedMode = false;
-      currentLevel = 1;  // Ensure that level is set to 1 for Free Play
+      wordModel.isLevelBasedMode = false;
     }
 
-    loadCSV().then((_) => loadState());
-  }
-
-  String getSharedPrefKey() {
-    return 'currentWordIndex_${widget.mode}';
-  }
-
-  String getLevelPrefKey() {
-    return 'currentLevel_${widget.mode}';
-  }
-
-  Future<void> loadCSV() async {
-    final data = await rootBundle.loadString('assets/words.csv');
-    List<List<dynamic>> csvTable = const CsvToListConverter().convert(data);
-
-    wordList = csvTable.where((row) {
-      switch (widget.mode) {
-        case 'easy':
-          return row[2] == 1;
-        case 'medium':
-          return row[3] == 1;
-        case 'hard':
-          return row[4] == 1;
-        case 'five':
-          return row[5] == 1;
-        case 'six':
-          return row[6] == 1;
-        case 'seven':
-          return row[7] == 1;
-        case 'Free Play':
-          return true;  // For Free Play, include all words
-        default:
-          return false;
-      }
-    }).map((row) => row.map((e) => e.toString()).toList()).toList();
-
-    if (wordList.isNotEmpty) {
-      updateWord();
-      setupTextFields();
-    }
-  }
-
-  Future<void> loadState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int? storedIndex = prefs.getInt(getSharedPrefKey());
-    int? storedLevel = prefs.getInt(getLevelPrefKey());
-
-    if (storedIndex != null && storedIndex < wordList.length) {
+    wordModel.loadCSV(widget.mode).then((_) => wordModel.loadState(widget.mode)).then((_) {
       setState(() {
-        currentWordIndex = storedIndex;
-        currentLevel = storedLevel ?? 1;
-        updateWord();
         setupTextFields();
       });
-    } else {
-      setState(() {
-        currentWordIndex = 0;
-        currentLevel = 1;
-        updateWord();
-        setupTextFields();
-      });
-    }
-  }
-
-  Future<void> saveState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(getSharedPrefKey(), currentWordIndex);
-    await prefs.setInt(getLevelPrefKey(), currentLevel);
-  }
-
-  void updateWord() {
-    if (currentWordIndex < wordList.length) {
-      hint = wordList[currentWordIndex][1]; // Keep hint as it is
-      word = wordList[currentWordIndex][0].toUpperCase(); // Convert word to uppercase
-    } else {
-      hint = '';
-      word = '';
-    }
+    });
   }
 
   void setupTextFields() {
-    controllers = List.generate(word.length, (index) => TextEditingController());
-    focusNodes = List.generate(word.length, (index) => FocusNode());
+    controllers = List.generate(wordModel.word.length, (index) => TextEditingController());
+    focusNodes = List.generate(wordModel.word.length, (index) => FocusNode());
 
     for (int i = 0; i < controllers.length; i++) {
       controllers[i].addListener(() {
@@ -130,12 +46,12 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
       });
     }
 
-    if (word.length >= 5) {
-      controllers[2].text = word[2];
-      controllers[4].text = word[4];
+    if (wordModel.word.length >= 5) {
+      controllers[2].text = wordModel.word[2];
+      controllers[4].text = wordModel.word[4];
     }
-    if (word.length >= 7) {
-      controllers[6].text = word[6];
+    if (wordModel.word.length >= 7) {
+      controllers[6].text = wordModel.word[6];
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,13 +69,8 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
   void checkAnswer() async {
     String guessedWord = controllers.map((c) => c.text.toUpperCase()).join();
 
-    if (guessedWord == word) {
-      correctGuessesInLevel++;
-      wordsGuessed++;
-
+    if (guessedWord == wordModel.word) {
       int points = 0;
-      int indexLevel = _getIndexLevelFromMode(widget.mode);
-
       switch (widget.mode) {
         case 'easy':
           points = 5;
@@ -175,17 +86,14 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
           break;
       }
 
-      final dbHelper = DatabaseHelper();
-      if (isLevelBasedMode) {
-        await dbHelper.insertOrUpdateByMode(widget.mode, currentLevel, points);
-      } else {
-        await dbHelper.insertOrUpdateByIndex(indexLevel, points);
-      }
+      await wordModel.savePoints(points, widget.mode, wordModel.currentLevel);
 
-      if (isLevelBasedMode && wordsGuessed % 10 == 0) {
-        _showLevelCompleteDialog();
-      } else if (isLevelBasedMode) {
-        _showCorrectAnswerDialog();
+      if (wordModel.isLevelBasedMode) {
+        if ((wordModel.currentLevel * 10) % 10 == 0) {
+          _showLevelCompleteDialog();
+        } else {
+          _showCorrectAnswerDialog();
+        }
       } else {
         _nextWord();
       }
@@ -194,37 +102,22 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
     }
   }
 
-  int _getIndexLevelFromMode(String mode) {
-    switch (mode) {
-      case 'five':
-        return 4;
-      case 'six':
-        return 5;
-      case 'seven':
-        return 6;
-      default:
-        return 0;
-    }
-  }
-
   void _showLevelCompleteDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Level Complete', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('You have completed Level $currentLevel.'),
+        content: Text('You have completed Level ${wordModel.currentLevel}.'),
         actions: [
           TextButton(
             onPressed: () {
               setState(() {
-                currentLevel++;
-                wordsGuessed = 0;
-                correctGuessesInLevel = 0;
-                currentWordIndex++;
-                updateWord();
+                wordModel.currentLevel++;
+                wordModel.currentWordIndex++;
+                wordModel.updateWord();
                 setupTextFields();
               });
-              saveState();
+              wordModel.saveState(widget.mode);
               Navigator.of(context).pop();
             },
             child: Text('Next Level', style: TextStyle(color: Colors.blue)),
@@ -244,11 +137,11 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                currentWordIndex++;
-                updateWord();
+                wordModel.currentWordIndex++;
+                wordModel.updateWord();
                 setupTextFields();
               });
-              saveState();
+              wordModel.saveState(widget.mode);
               Navigator.of(context).pop();
             },
             child: Text('Next Word', style: TextStyle(color: Colors.green)),
@@ -263,16 +156,16 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Incorrect!', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('The correct word was $word.'),
+        content: Text('The correct word was ${wordModel.word}.'),
         actions: [
           TextButton(
             onPressed: () {
               setState(() {
-                currentWordIndex++;
-                updateWord();
+                wordModel.currentWordIndex++;
+                wordModel.updateWord();
                 setupTextFields();
               });
-              saveState();
+              wordModel.saveState(widget.mode);
               Navigator.of(context).pop();
             },
             child: Text('Next Word', style: TextStyle(color: Colors.red)),
@@ -284,14 +177,14 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
 
   void _nextWord() {
     setState(() {
-      currentWordIndex++;
-      if (currentWordIndex >= wordList.length) {
-        currentWordIndex = 0;  // Restart or end of words
+      wordModel.currentWordIndex++;
+      if (wordModel.currentWordIndex >= wordModel.wordList.length) {
+        wordModel.currentWordIndex = 0;
       }
-      updateWord();
+      wordModel.updateWord();
       setupTextFields();
     });
-    saveState();
+    wordModel.saveState(widget.mode);
   }
 
   @override
@@ -311,7 +204,7 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
           ),
         ],
       ),
-      body: wordList.isEmpty
+      body: wordModel.wordList.isEmpty
           ? Center(child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(20.0),
@@ -319,12 +212,12 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hint: ${hint.toLowerCase()}',
+              'Hint: ${wordModel.hint.toLowerCase()}',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black54),
             ),
             SizedBox(height: 20),
             Row(
-              children: List.generate(word.length, (index) {
+              children: List.generate(wordModel.word.length, (index) {
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
