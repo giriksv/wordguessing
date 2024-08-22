@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'Model/word_model.dart';
-import 'achievement.dart';
+import '../controller/word_controller.dart';
+import '../model/word_model.dart';
+import '../achievement.dart';
 
 class WordGuessScreen extends StatefulWidget {
   final String mode;
@@ -13,114 +14,95 @@ class WordGuessScreen extends StatefulWidget {
 }
 
 class _WordGuessScreenState extends State<WordGuessScreen> {
-  late WordModel wordModel;
-  List<TextEditingController> controllers = [];
-  List<FocusNode> focusNodes = [];
+  late WordController _controller;
+  late WordModel _model;
+  List<TextEditingController> _controllers = [];
+  List<FocusNode> _focusNodes = [];
 
   @override
   void initState() {
     super.initState();
-    wordModel = WordModel();
-    wordModel.isLevelBasedMode = ['easy', 'medium', 'hard'].contains(widget.mode);
-
-    if (widget.mode == 'Free Play') {
-      wordModel.isLevelBasedMode = false;
-    }
-
-    wordModel.loadCSV(widget.mode).then((_) => wordModel.loadState(widget.mode)).then((_) {
-      setState(() {
-        setupTextFields();
-      });
-    });
+    _model = WordModel(mode: widget.mode);
+    _controller = WordController(_model);
+    _controller.initialize().then((_) => setupTextFields());
   }
 
   void setupTextFields() {
-    controllers = List.generate(wordModel.word.length, (index) => TextEditingController());
-    focusNodes = List.generate(wordModel.word.length, (index) => FocusNode());
+    _controllers = List.generate(_model.word.length, (index) => TextEditingController());
+    _focusNodes = List.generate(_model.word.length, (index) => FocusNode());
 
-    for (int i = 0; i < controllers.length; i++) {
-      controllers[i].addListener(() {
-        if (controllers[i].text.length == 1) {
+    for (int i = 0; i < _controllers.length; i++) {
+      _controllers[i].addListener(() {
+        if (_controllers[i].text.length == 1) {
           FocusScope.of(context).requestFocus(getNextFocusNode(i + 1));
         }
       });
     }
 
-    if (wordModel.word.length >= 5) {
-      controllers[2].text = wordModel.word[2];
-      controllers[4].text = wordModel.word[4];
-    }
-    if (wordModel.word.length >= 7) {
-      controllers[6].text = wordModel.word[6];
+    // Logic to display certain letters
+    switch (_model.word.length) {
+      case 5:
+        _controllers[1].text = _model.word[1];
+        _controllers[3].text = _model.word[3];
+        break;
+      case 6:
+        _controllers[2].text = _model.word[2];
+        _controllers[4].text = _model.word[4];
+        break;
+      case 7:
+        _controllers[2].text = _model.word[2];
+        _controllers[5].text = _model.word[5];
+        break;
+      case 8:
+        _controllers[1].text = _model.word[1];
+        _controllers[3].text = _model.word[3];
+        _controllers[6].text = _model.word[6];
+        break;
+      default:
+        if (_model.word.length > 8) {
+          _controllers[1].text = _model.word[1];
+          _controllers[5].text = _model.word[5];
+          _controllers[6].text = _model.word[6];
+        }
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).requestFocus(getNextFocusNode(0));
-    });
+    setState(() {});
   }
 
   FocusNode getNextFocusNode(int index) {
-    if (index < focusNodes.length) {
-      return focusNodes[index];
+    if (index < _focusNodes.length) {
+      return _focusNodes[index];
     }
-    return focusNodes.last;
+    return _focusNodes.last;
   }
 
-  void checkAnswer() async {
-    String guessedWord = controllers.map((c) => c.text.toUpperCase()).join();
+  void _checkAnswer() {
+    String guessedWord = _controllers.map((c) => c.text.toUpperCase()).join();
 
-    if (guessedWord == wordModel.word) {
-      int points = 0;
-      switch (widget.mode) {
-        case 'easy':
-          points = 5;
-          break;
-        case 'medium':
-          points = 7;
-          break;
-        case 'hard':
-          points = 10;
-          break;
-        default:
-          points = 5;
-          break;
-      }
-
-      await wordModel.savePoints(points, widget.mode, wordModel.currentLevel);
-
-      if (wordModel.isLevelBasedMode) {
-        if ((wordModel.currentLevel * 10) % 10 == 0) {
-          _showLevelCompleteDialog();
-        } else {
-          _showCorrectAnswerDialog();
-        }
+    _controller.checkAnswer(guessedWord, (bool levelCompleted) {
+      if (levelCompleted) {
+        _showLevelCompleteDialog();
       } else {
-        _nextWord();
+        _showCorrectAnswerDialog();
       }
-    } else {
+    }, () {
       _showIncorrectAnswerDialog();
-    }
+    });
   }
 
   void _showLevelCompleteDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Level Complete', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('You have completed Level ${wordModel.currentLevel}.'),
+        title: Text('Level Complete'),
+        content: Text('You have completed Level ${_model.currentLevel}.'),
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                wordModel.currentLevel++;
-                wordModel.currentWordIndex++;
-                wordModel.updateWord();
-                setupTextFields();
-              });
-              wordModel.saveState(widget.mode);
+              setupTextFields();
               Navigator.of(context).pop();
             },
-            child: Text('Next Level', style: TextStyle(color: Colors.blue)),
+            child: Text('Next Level'),
           ),
         ],
       ),
@@ -131,20 +113,15 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Correct!', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Correct!'),
         content: Text('You guessed the word correctly.'),
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                wordModel.currentWordIndex++;
-                wordModel.updateWord();
-                setupTextFields();
-              });
-              wordModel.saveState(widget.mode);
+              setupTextFields();
               Navigator.of(context).pop();
             },
-            child: Text('Next Word', style: TextStyle(color: Colors.green)),
+            child: Text('Next Word'),
           ),
         ],
       ),
@@ -155,114 +132,94 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Incorrect!', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('The correct word was ${wordModel.word}.'),
+        title: Text('Incorrect!'),
+        content: Text('The correct word was ${_model.word}.'),
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                wordModel.currentWordIndex++;
-                wordModel.updateWord();
-                setupTextFields();
-              });
-              wordModel.saveState(widget.mode);
+              setupTextFields();
               Navigator.of(context).pop();
             },
-            child: Text('Next Word', style: TextStyle(color: Colors.red)),
+            child: Text('Next Word'),
           ),
         ],
       ),
     );
-  }
-
-  void _nextWord() {
-    setState(() {
-      wordModel.currentWordIndex++;
-      if (wordModel.currentWordIndex >= wordModel.wordList.length) {
-        wordModel.currentWordIndex = 0;
-      }
-      wordModel.updateWord();
-      setupTextFields();
-    });
-    wordModel.saveState(widget.mode);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Word Guessing Game'),
+        title: Text('Guess the Word'),
         actions: [
           IconButton(
             icon: Icon(Icons.star),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AchievementScreen()),
+                MaterialPageRoute(
+                  builder: (context) => AchievementScreen(),
+                ),
               );
             },
           ),
         ],
       ),
-      body: wordModel.wordList.isEmpty
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-        padding: const EdgeInsets.all(20.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Hint: ${wordModel.hint.toLowerCase()}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black54),
+              'Hint: ${_model.hint}',
+              style: TextStyle(fontSize: 24.0),
             ),
-            SizedBox(height: 20),
-            Row(
-              children: List.generate(wordModel.word.length, (index) {
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: TextField(
-                      controller: controllers[index],
-                      focusNode: focusNodes[index],
-                      textAlign: TextAlign.center,
-                      inputFormatters: [UpperCaseTextFormatter()],
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        contentPadding: EdgeInsets.symmetric(vertical: 16.0),
-                      ),
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+            SizedBox(height: 24.0),
+            GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _model.word.length,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: _model.word.length,
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: TextField(
+                    controller: _controllers[index],
+                    focusNode: _focusNodes[index],
+                    textAlign: TextAlign.center,
+                    textCapitalization: TextCapitalization.characters,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(1),
+                    ],
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.grey[200],
                     ),
+                    style: TextStyle(fontSize: 32.0),
                   ),
                 );
-              }),
+              },
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 24.0),
             ElevatedButton(
-              onPressed: checkAnswer,
-              child: Text('Submit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.blue,
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-              ),
+              onPressed: _checkAnswer,
+              child: Text('Check Answer'),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class UpperCaseTextFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    return newValue.copyWith(
-      text: newValue.text.toUpperCase(),
-      selection: newValue.selection,
-    );
+  void dispose() {
+    _controllers.forEach((controller) => controller.dispose());
+    _focusNodes.forEach((node) => node.dispose());
+    _controller.saveState();
+    super.dispose();
   }
 }

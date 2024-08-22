@@ -38,6 +38,8 @@ dependencies:
   csv: ^5.0.0
   shared_preferences: ^2.3.2
   sqflite: ^2.3.3+1
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +60,13 @@ dev_dependencies:
 flutter:
   assets:
     - assets/words.csv
+    - assets/image/
+  fonts:
+    - family: Lobster
+      fonts:
+        - asset: fonts/Lobster-Regular.ttf
+
+
 
 
   # The following line ensures that the Material Icons font is
@@ -92,6 +101,8 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+
+
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
