@@ -38,10 +38,16 @@ dependencies:
   csv: ^5.0.0
   shared_preferences: ^2.3.2
   sqflite: ^2.3.3+1
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+  google_mobile_ads: ^5.1.0
+  flutter_native_splash: ^2.4.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -55,9 +61,25 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 
+flutter_native_splash:
+  color: "#0083CB"  # The background color of your splash screen
+  image: assets/image/splash.png  # Path to your splash screen image
+  android: true
+  ios: true
+  fullscreen: true  # Ensure fullscreen for the splash screen
+
+
+
 flutter:
   assets:
     - assets/words.csv
+    - assets/image/
+  fonts:
+    - family: Lobster
+      fonts:
+        - asset: fonts/Lobster-Regular.ttf
+
+
 
 
   # The following line ensures that the Material Icons font is
@@ -92,6 +114,9 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+
+
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
