@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:word_guessing_app/View/bottom_navigation.dart';
 import 'package:word_guessing_app/main.dart'; // Import the main file for buildAppBar
 import 'package:word_guessing_app/view/word_guess_screen.dart';
 
@@ -15,12 +16,12 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> with SingleTi
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(seconds: 3), // Same duration as GameSelectionScreen
+      duration: const Duration(seconds: 3),
       vsync: this,
     );
     _animation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut, // Same curve as GameSelectionScreen
+      curve: Curves.easeInOut,
     ));
     _animationController.forward();
   }
@@ -34,71 +35,72 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyApp.buildAppBar(),
+      appBar: MyApp.buildAppBar(),  // Static AppBar
       body: MyApp.buildGradientBackground(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStyledButton(context, 'Easy', WordGuessScreen(mode: 'easy')),
-              SizedBox(height: 25.0),
-              _buildStyledButton(context, 'Medium', WordGuessScreen(mode: 'medium')),
-              SizedBox(height: 25.0),
-              _buildStyledButton(context, 'Hard', WordGuessScreen(mode: 'hard')),
-            ],
+        child: FadeTransition(
+          opacity: _animation,  // Only the body content fades in
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildStyledButton(context, 'Easy', WordGuessScreen(mode: 'easy')),
+                SizedBox(height: 25.0),
+                _buildStyledButton(context, 'Medium', WordGuessScreen(mode: 'medium')),
+                SizedBox(height: 25.0),
+                _buildStyledButton(context, 'Hard', WordGuessScreen(mode: 'hard')),
+              ],
+            ),
           ),
         ),
       ),
+      //bottomNavigationBar: BottomNavigation(currentIndex: 0),  // Static Bottom Navigation
     );
   }
 
   Widget _buildStyledButton(BuildContext context, String label, Widget page) {
-    return FadeTransition(
-      opacity: _animation,
-      child: Container(
-        width: 200.0, // Match the button size
-        height: 60.0, // Match the button size
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter, // Start gradient at the top
-            end: Alignment.bottomCenter, // End gradient at the bottom
-            colors: _getButtonGradientColors(label),
-          ),
-          borderRadius: BorderRadius.circular(7.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              offset: Offset(0, 4),
-              blurRadius: 4,
-            ),
-          ],
+    return Container(
+      width: 200.0,
+      height: 60.0,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: _getButtonGradientColors(label),
         ),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent, // Set to transparent to show gradient
-            elevation: 0, // Remove shadow if needed
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(7.0),
-              side: BorderSide(
-                color: Colors.black,
-                width: 1.0,
-              ),
+        borderRadius: BorderRadius.circular(7.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            offset: Offset(0, 4),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(7.0),
+            side: BorderSide(
+              color: Colors.black,
+              width: 1.0,
             ),
           ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              _createPageTransition(page),
-            );
-          },
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20.0,
-                fontWeight: FontWeight.bold,
-              ),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            _createPageTransition(page),
+          );
+        },
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),

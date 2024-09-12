@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:word_guessing_app/View/bottom_navigation.dart';
 import 'package:word_guessing_app/main.dart'; // Import the main file for buildBottomNavigationBar
 import 'package:word_guessing_app/game_selection_screen.dart';
 import 'package:word_guessing_app/mode_selection_screen.dart';
@@ -10,54 +11,124 @@ class AchievementScreen extends StatefulWidget {
 }
 
 class _AchievementScreenState extends State<AchievementScreen> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Achievements'),
-        backgroundColor: Color(0xFF0083CB), // Ensure AppBar color consistency
-      ),
+      //appBar: MyApp.buildAppBar(),
       body: Container(
         decoration: buildGradientBackground(), // Apply gradient background
-        child: FutureBuilder<Map<String, int>>(
-          future: loadPoints(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error loading points'));
-            } else {
-              final points = snapshot.data!;
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Total Points: ${points['total']}', style: TextStyle(fontSize: 20, color: Colors.white)),
-                    SizedBox(height: 10),
-                    Text('Points by Easy Mode: ${points['easy']}', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    Text('Points by Medium Mode: ${points['medium']}', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    Text('Points by Hard Mode: ${points['hard']}', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    Text('Points by Five Mode: ${points['five']}', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    Text('Points by Six Mode: ${points['six']}', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    Text('Points by Seven Mode: ${points['seven']}', style: TextStyle(fontSize: 16, color: Colors.white)),
-                  ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Achievement',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            }
-          },
+                textAlign: TextAlign.left,
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<Map<String, int>>(
+                future: loadPoints(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error loading points'));
+                  } else {
+                    final points = snapshot.data!;
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildAchievementCard(
+                              'Total Points',
+                              points['total'].toString(),
+                              Colors.orangeAccent,
+                            ),
+                            SizedBox(height: 10),
+                            _buildAchievementCard(
+                              'Points by Easy Mode',
+                              points['easy'].toString(),
+                              Colors.greenAccent,
+                            ),
+                            SizedBox(height: 10),
+                            _buildAchievementCard(
+                              'Points by Medium Mode',
+                              points['medium'].toString(),
+                              Colors.blueAccent,
+                            ),
+                            SizedBox(height: 10),
+                            _buildAchievementCard(
+                              'Points by Hard Mode',
+                              points['hard'].toString(),
+                              Colors.redAccent,
+                            ),
+                            SizedBox(height: 10),
+                            _buildAchievementCard(
+                              'Points by Five Letter',
+                              points['five'].toString(),
+                              Colors.purpleAccent,
+                            ),
+                            SizedBox(height: 10),
+                            _buildAchievementCard(
+                              'Points by Six Letter',
+                              points['six'].toString(),
+                              Colors.pinkAccent,
+                            ),
+                            SizedBox(height: 10),
+                            _buildAchievementCard(
+                              'Points by Seven Letter',
+                              points['seven'].toString(),
+                              Colors.cyanAccent,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
         ),
       ),
-      // bottomNavigationBar: MyApp.buildBottomNavigationBar(
-      //   currentIndex: _selectedIndex,
-      //   onTap: (index) {
-      //     setState(() {
-      //       _selectedIndex = index;
-      //       _onItemTapped(index);
-      //     });
-      //   },
-      // ),
+      //bottomNavigationBar: BottomNavigation(currentIndex: 1),
+    );
+  }
+
+  Widget _buildAchievementCard(String title, String points, Color color) {
+    return Card(
+      color: Colors.white.withOpacity(0.8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      elevation: 5,
+      child: ListTile(
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        trailing: Text(
+          points,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+      ),
     );
   }
 
@@ -88,25 +159,5 @@ class _AchievementScreenState extends State<AchievementScreen> {
         ],
       ),
     );
-  }
-
-  void _onItemTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GameSelectionScreen()),
-        );
-        break;
-      case 1:
-      // Already on Achievement screen
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ModeSelectionScreen()),
-        );
-        break;
-    }
   }
 }

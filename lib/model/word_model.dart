@@ -16,49 +16,75 @@ class WordModel {
 
   WordModel({required this.mode}) : isLevelBasedMode = ['easy', 'medium', 'hard'].contains(mode);
 
+  /// Load words from CSV file
   Future<void> loadCSV() async {
-    final data = await rootBundle.loadString('assets/words.csv');
-    List<List<dynamic>> csvTable = const CsvToListConverter().convert(data);
+    try {
+      final data = await rootBundle.loadString('assets/words.csv');
+      List<List<dynamic>> csvTable = const CsvToListConverter().convert(data);
 
-    wordList = csvTable.where((row) {
-      switch (mode) {
-        case 'easy':
-          return row[2] == 1;
-        case 'medium':
-          return row[3] == 1;
-        case 'hard':
-          return row[4] == 1;
-        case 'five':
-          return row[5] == 1;
-        case 'six':
-          return row[6] == 1;
-        case 'seven':
-          return row[7] == 1;
-        case 'Free Play':
-          return true;
-        default:
-          return false;
+      wordList = csvTable.where((row) {
+        switch (mode) {
+          case 'easy':
+            return row[2] == 1;
+          case 'medium':
+            return row[3] == 1;
+          case 'hard':
+            return row[4] == 1;
+          case 'five':
+            return row[5] == 1;
+          case 'six':
+            return row[6] == 1;
+          case 'seven':
+            return row[7] == 1;
+          case 'Free Play':
+            return true;
+          default:
+            return false;
+        }
+      }).map((row) => row.map((e) => e.toString()).toList()).toList();
+
+      if (wordList.isNotEmpty) {
+        updateWord();
       }
-    }).map((row) => row.map((e) => e.toString()).toList()).toList();
-
-    if (wordList.isNotEmpty) {
-      updateWord();
+    } catch (e) {
+      print('Error loading CSV: $e');
     }
   }
 
+  /// Load game state for the current mode from SharedPreferences
   Future<void> loadState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    currentWordIndex = prefs.getInt('currentWordIndex_$mode') ?? 0;
-    currentLevel = prefs.getInt('currentLevel_$mode') ?? 1;
-    updateWord();
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      currentWordIndex = prefs.getInt('currentWordIndex_$mode') ?? 0;
+      currentLevel = prefs.getInt('currentLevel_$mode') ?? 1;
+      wordsGuessed = prefs.getInt('wordsGuessed_$mode') ?? 0;
+      correctGuessesInLevel = prefs.getInt('correctGuessesInLevel_$mode') ?? 0;
+
+      print('Loaded state for $mode: WordIndex = $currentWordIndex, Level = $currentLevel');
+      updateWord();
+    } catch (e) {
+      print('Error loading state: $e');
+    }
   }
 
+  /// Save the current game state for the current mode in SharedPreferences
   Future<void> saveState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('currentWordIndex_$mode', currentWordIndex);
-    await prefs.setInt('currentLevel_$mode', currentLevel);
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      await prefs.setInt('currentWordIndex_$mode', currentWordIndex);
+      await prefs.setInt('currentLevel_$mode', currentLevel);
+      await prefs.setInt('wordsGuessed_$mode', wordsGuessed);
+      await prefs.setInt('correctGuessesInLevel_$mode', correctGuessesInLevel);
+
+      print('Saved state for $mode: WordIndex = $currentWordIndex, Level = $currentLevel');
+    } catch (e) {
+      print('Error saving state: $e');
+    }
   }
 
+  /// Update current word and hint
   void updateWord() {
     if (currentWordIndex < wordList.length) {
       hint = wordList[currentWordIndex][1];
@@ -69,11 +95,13 @@ class WordModel {
     }
   }
 
+  /// Increment the word index and update word
   void incrementWordIndex() {
     currentWordIndex++;
     updateWord();
   }
 
+  /// Calculate points based on mode
   int calculatePoints() {
     switch (mode) {
       case 'easy':
@@ -87,6 +115,7 @@ class WordModel {
     }
   }
 
+  /// Save points to the database based on the mode
   Future<void> savePoints() async {
     final dbHelper = DatabaseHelper();
     if (isLevelBasedMode) {
@@ -97,6 +126,7 @@ class WordModel {
     }
   }
 
+  /// Map mode to index level
   int _getIndexLevelFromMode(String mode) {
     switch (mode) {
       case 'five':

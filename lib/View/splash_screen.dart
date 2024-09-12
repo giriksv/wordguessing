@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'game_selection_screen.dart';
+import '../game_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     // Initialize the animation controller
     _controller = AnimationController(
-      duration: Duration(seconds: 3),
+      duration: Duration(seconds: 5),
       vsync: this,
     );
 
@@ -27,10 +27,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       curve: Curves.easeIn,
     );
 
-    // Start the fade-in after a delay of 1 second
-    Future.delayed(Duration(seconds: 1), () {
-      _controller.forward();
-    });
+    // Start the fade-in animation immediately
+    _controller.forward();
   }
 
   @override
@@ -64,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       // Display the word "WordGame" with the Lobster font and white border
                       Center(
                         child: Text(
-                          'WordGame',
+                          'KnoWord ',
                           style: TextStyle(
                             fontFamily: 'Lobster',
                             fontSize: 48.0,
@@ -100,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               );
                             },
                             child: Text(
-                              'PLAY NOW !',
+                              'PLAY NOW!',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 25.4,
@@ -109,10 +107,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             ),
                           ),
                         ),
-                      )
+                      ),
                     ],
-            ),
                   ),
+                ),
               ],
             ),
           ),

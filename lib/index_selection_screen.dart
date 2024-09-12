@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:word_guessing_app/View/bottom_navigation.dart';
 import 'package:word_guessing_app/main.dart'; // Import the main file for buildAppBar
 import 'package:word_guessing_app/view/word_guess_screen.dart';
 
@@ -49,6 +50,8 @@ class _IndexSelectionScreenState extends State<IndexSelectionScreen> with Single
           ),
         ),
       ),
+     //bottomNavigationBar: BottomNavigation(currentIndex: 0),
+
     );
   }
 

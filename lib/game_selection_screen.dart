@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:word_guessing_app/View/bottom_navigation.dart';
 import 'package:word_guessing_app/main.dart'; // Import the main file for buildAppBar
 import 'package:word_guessing_app/view/word_guess_screen.dart';
 import 'index_selection_screen.dart';
@@ -38,7 +39,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyApp.buildAppBar(),
+      // appBar: MyApp.buildAppBar(),
       body: MyApp.buildGradientBackground(
         child: Center(
           child: Column(
@@ -53,6 +54,8 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> with SingleTi
           ),
         ),
       ),
+     // bottomNavigationBar: BottomNavigation(currentIndex: 0),
+
     );
   }
 

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:word_guessing_app/splash_screen.dart';
-import 'package:word_guessing_app/game_selection_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:word_guessing_app/achievement.dart';
-import 'package:word_guessing_app/mode_selection_screen.dart';
+import 'package:word_guessing_app/game_selection_screen.dart';
+import 'package:word_guessing_app/index_selection_screen.dart';
+import 'package:word_guessing_app/View/splash_screen.dart';
+import 'package:word_guessing_app/view/settings_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize(); // Initialize AdMob
   runApp(MyApp());
 }
 
@@ -23,47 +27,35 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Word Guessing App',
+      title: 'KnoWord ',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.transparent,
       ),
       home: SplashScreenWrapper(),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/gameSelection':
-            return MaterialPageRoute(
-              builder: (context) => MainScreen(
-                selectedIndex: 0,
-                child: GameSelectionScreen(),
-              ),
-            );
-          case '/achievement':
-            return MaterialPageRoute(
-              builder: (context) => MainScreen(
-                selectedIndex: 1,
-                child: AchievementScreen(),
-              ),
-            );
-          case '/modeSelection':
-            return MaterialPageRoute(
-              builder: (context) => MainScreen(
-                selectedIndex: 2,
-                child: ModeSelectionScreen(),
-              ),
-            );
-          default:
-            return MaterialPageRoute(builder: (context) => SplashScreenWrapper());
-        }
-      },
     );
   }
 
-  static AppBar buildAppBar() {
+  static AppBar buildAppBar({bool showBackButton = true}) {
     return AppBar(
+      leading: showBackButton
+          ? Builder(
+        builder: (BuildContext context) {
+          return IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: Colors.white, // Set the arrow color to white
+            ),
+            onPressed: () {
+              Navigator.of(context).pop(); // Navigate to the previous screen
+            },
+          );
+        },
+      )
+          : null,
       title: Padding(
         padding: const EdgeInsets.only(top: 8.0),
         child: Text(
-          'Word Game',
+          'KnoWord ',
           style: GoogleFonts.lobster(
             textStyle: TextStyle(
               fontSize: 48.0,
@@ -88,71 +80,79 @@ class MyApp extends StatelessWidget {
       child: child,
     );
   }
-
-  static BottomNavigationBar buildBottomNavigationBar({
-    required int currentIndex,
-    required Function(int) onTap,
-  }) {
-    return BottomNavigationBar(
-      items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.star),
-          label: 'Achievement',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          label: 'Settings',
-        ),
-      ],
-      currentIndex: currentIndex,
-      selectedItemColor: Colors.blue[800],
-      backgroundColor: Color(0xFFC6EEEE),
-      onTap: onTap,
-    );
-  }
 }
 
 class SplashScreenWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // Navigate to MainScreen after a delay
+    Future.delayed(Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => MainScreen(selectedIndex: 0)),
+      );
+    });
+
     return Scaffold(
-      body: SplashScreen(),
-      bottomNavigationBar: MyApp.buildBottomNavigationBar(
-        currentIndex: 0,
-        onTap: (index) {
-          Navigator.pushReplacementNamed(
-            context,
-            index == 0 ? '/gameSelection' : index == 1 ? '/achievement' : '/modeSelection',
-          );
-        },
-      ),
+      body: SplashScreen(), // Ensure this widget is implemented correctly
     );
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   final int selectedIndex;
-  final Widget child;
 
-  MainScreen({required this.selectedIndex, required this.child});
+  MainScreen({required this.selectedIndex});
+
+  @override
+  _MainScreenState createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    GameSelectionScreen(),
+    AchievementScreen(),
+    SettingsScreen(),
+    IndexSelectionScreen(), // Example of a screen that needs a back button
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.selectedIndex;
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyApp.buildAppBar(),
-      body: MyApp.buildGradientBackground(child: child),
-      bottomNavigationBar: MyApp.buildBottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (index) {
-          Navigator.pushReplacementNamed(
-            context,
-            index == 0 ? '/gameSelection' : index == 1 ? '/achievement' : '/modeSelection',
-          );
-        },
+      appBar: MyApp.buildAppBar(
+        showBackButton: _currentIndex == 3, // Show back button only for non-index screens
+      ),
+      body: MyApp.buildGradientBackground(child: _pages[_currentIndex]),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star),
+            label: 'Achievements',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        onTap: _onItemTapped,
       ),
     );
   }
