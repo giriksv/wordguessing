@@ -86,7 +86,7 @@ class SplashScreenWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Navigate to MainScreen after a delay
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(Duration(seconds: 5), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => MainScreen(selectedIndex: 0)),
       );

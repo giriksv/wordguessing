@@ -61,12 +61,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 _buildSectionTitle('Changes to our Privacy Policy:'),
                 _buildContentText(
                     'If we decide to make changes to our privacy policy, we will post the updates on this page and within our application. '
-                        'This policy was last modified on September 9, 2024.'),
+                        'This policy was last modified on September 14, 2024.'),
                 SizedBox(height: 16),
                 _buildSectionTitle('Contacting Us:'),
                 _buildContentText(
                     'If there are any questions regarding our privacy policy you may contact us using the information below.\n\n'
-                        'Email: zingtekinnovations@gmail.com'),
+                        'Email: zealtown22@gmail.com'),
               ],
             ),
           ),

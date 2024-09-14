@@ -6,7 +6,7 @@ import 'package:word_guessing_app/main.dart';
 import 'package:word_guessing_app/model/database_helper.dart';
 import '../controller/word_controller.dart';
 import '../model/word_model.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+//import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 
 class WordGuessScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
   List<TextEditingController> _controllers = [];
   List<FocusNode> _focusNodes = [];
   int totalPoints = 0;
-  InterstitialAd? _interstitialAd;
+  //InterstitialAd? _interstitialAd;
   int _clickCount = 0; // Counter to track button clicks
   final String adUnitId = 'ca-app-pub-3940256099942544/1033173712';
   //our adunitid
@@ -39,7 +39,7 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
     _controller.initialize().then((_) {
       setupTextFields();
       _fetchTotalPoints();
-      _createInterstitialAd(); // Load the ad on screen initialization
+      //_createInterstitialAd(); // Load the ad on screen initialization
 
     });
   }
@@ -105,50 +105,50 @@ class _WordGuessScreenState extends State<WordGuessScreen> {
     }
     return _focusNodes.last;
   }
-  void _createInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (InterstitialAd ad) {
-          _interstitialAd = ad;
-          _interstitialAd?.setImmersiveMode(true);
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          print('InterstitialAd failed to load: $error');
-        },
-      ),
-    );
-  }
-  void _showInterstitialAd() {
-    if (_interstitialAd != null) {
-      _interstitialAd?.show();
-      _interstitialAd = null; // Reset after showing ad
-      _createInterstitialAd(); // Load a new ad for next use
-    }
-  }
+  // void _createInterstitialAd() {
+  //   InterstitialAd.load(
+  //     adUnitId: adUnitId,
+  //     request: const AdRequest(),
+  //     adLoadCallback: InterstitialAdLoadCallback(
+  //       onAdLoaded: (InterstitialAd ad) {
+  //         _interstitialAd = ad;
+  //         _interstitialAd?.setImmersiveMode(true);
+  //       },
+  //       onAdFailedToLoad: (LoadAdError error) {
+  //         print('InterstitialAd failed to load: $error');
+  //       },
+  //     ),
+  //   );
+  // }
+  // void _showInterstitialAd() {
+  //   if (_interstitialAd != null) {
+  //     _interstitialAd?.show();
+  //     _interstitialAd = null; // Reset after showing ad
+  //     _createInterstitialAd(); // Load a new ad for next use
+  //   }
+  // }
   // Call this method on button click
-  void _handleButtonClick() {
-    setState(() {
-      _clickCount++;
-    });
-
-    if (_clickCount == 3) {
-      _showInterstitialAd();
-      _clickCount = 0; // Reset the click counter
-    }
-
-    // Add your button click logic here
-  }
+  // void _handleButtonClick() {
+  //   setState(() {
+  //     _clickCount++;
+  //   });
+  //
+  //   if (_clickCount == 3) {
+  //     _showInterstitialAd();
+  //     _clickCount = 0; // Reset the click counter
+  //   }
+  //
+  //   // Add your button click logic here
+  // }
   @override
   void dispose() {
-    _interstitialAd?.dispose();
+    //_interstitialAd?.dispose();
     super.dispose();
   }
 
   void _checkAnswer() {
     String guessedWord = _controllers.map((c) => c.text.toUpperCase()).join();
-    _handleButtonClick(); // Correctly call the method
+    //_handleButtonClick(); // Correctly call the method
 
     _controller.checkAnswer(guessedWord, (bool levelCompleted) {
       if (levelCompleted) {

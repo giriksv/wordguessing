@@ -28,13 +28,14 @@ class Termsandcondition extends StatelessWidget {
                 _buildSectionTitle('Changes to our Terms of service:'),
                 _buildContentText(
                     'If we decide to update our Terms of Service, we will post the changes on this page and within our application.'
-                    'This policy was last modified on September 9, 2024.'),
+                    'This policy was last modified on September 14, 2024.'),
                 SizedBox(height: 16),
                 _buildSectionTitle('Contact Us : '),
                 _buildContentText(
-                    'If you have any questions or concerns about these Terms, please contact us at zingtekinnovations@gmail.com'
+                    'If you have any questions or concerns about these Terms, please contact us at zealtown22@gmail.com '
                     'By using the KnoWord application, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service'),
-                SizedBox(height: 16),              ],
+                SizedBox(height: 16),
+              ],
             ),
           ),
         ),

@@ -24,6 +24,7 @@ if (flutterVersionName == null) {
 }
 
 android {
+    compileSdkVersion 34
     namespace = "com.example.word_guessing_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -43,14 +44,25 @@ android {
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
+    signingConfigs {
+        release {
+            keyAlias 'keyalias'
+            keyPassword 'Kccr@2002'
+            storeFile file('D:/word_guessing_app/android/app/my-release-key.jks')
+            storePassword 'Kccr@2002'
+        }
+        debug {
+            // Define debug signing configuration if needed
+        }
+    }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
-        }
-    }
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }    }
 }
 
 flutter {
