@@ -114,6 +114,7 @@ class _MainScreenState extends State<MainScreen> {
     GameSelectionScreen(),
     AchievementScreen(),
     SettingsScreen(),
+
     IndexSelectionScreen(), // Example of a screen that needs a back button
   ];
 
